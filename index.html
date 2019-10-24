@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="keywords" content="转盘,代替决定,选择困难症,代替选择,代你决定,代你选择,在线转盘">
+  <meta name="description" content="转盘是一个简易的在线网页应用，旨在帮助遇到难以选择的状况或罹患选择困难症的个人或群体快速选择">
+  <meta name="author" content="郑鹤">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=0.5">
+  <title>转盘</title>
+
+  <link rel="icon" type="image/x-icon" href="/favicons/lunch-launcher-favicon.ico">
+  <link rel="icon" type="image/png" href="/favicons/lunch-launcher-favicon-16x16.png">
+
+  <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet">
+  <link href="https://cdn.bootcss.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- 本应用 css 和 javascript 都没有做最小化，欢迎交流使用 -->
+
+  <style title="lunch-launcher">
+    body {
+      margin: 0px;
+      background-color: #EAEAEA;
+
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #container {
+      width: 100vw;
+      height: 90vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #wrapper {
+      margin: 0 auto;
+      width: 532px;
+    }
+
+    #wheel {
+      width: 532px;
+      height: 532px;
+      border-radius: 50%;
+      box-sizing: border-box;
+      position: relative;
+      border: 16px solid #fff;
+      overflow: hidden;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+
+    #inner-wheel {
+      width: 100%;
+      height: 100%;
+
+      position: relative;
+
+      transition: all 6s cubic-bezier(0,.99,.44,.99);
+    }
+
+    #wheel div.sec {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 250px 144px 0;
+      border-color: #19c transparent;
+      transform-origin: 144px 250px;
+      left: calc(50% - 144px);
+      top:0px;
+      opacity:1;
+    }
+
+    #wheel div.sec:nth-child(1) {
+      transform: rotate(0deg);
+      border-color: #16a085 transparent;
+    }
+
+    #wheel div.sec .sec-content {
+      margin-top: -200px;
+      color: #EEE;
+      position: relative;
+      z-index: 9;
+      display: block;
+      text-align: center;
+      font-size:16px;
+      margin-left:-10px;
+      user-select: none;
+
+      text-shadow: rgba(255, 255, 255, 0.1) 0px -1px 0px, rgba(0, 0, 0, 0.2) 0px 1px 0px;
+    }
+
+    #spin {
+      width: 136px;
+      height: 136px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      background: white;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      box-shadow:0px 3px 0px rgba(0,0,0,0.1);
+      z-index: 11;
+      cursor: pointer;
+
+      user-select: none;
+    }
+
+    #spin:before {
+      content: "";
+      position: absolute;
+      width: 0px;
+      height: 0px;
+      border-style: solid;
+      border-width: 0 20px 28px 20px;
+      border-color: transparent transparent #ffffff transparent;
+      top: -24px;
+      left: 48px;
+    }
+
+    #spin:after {
+      content: "去哪吃";
+      text-align: center;
+      line-height: 136px;
+      color: white;
+      position: relative;
+      z-index: 12;
+      width: 136px;
+      height: 136px;
+      display: block;
+    }
+
+    #spin:active #inner-spin {
+      box-shadow:inset 0px 0px 5px rgba(0,0,0,0.4);
+    }
+
+    #spin:active:after {
+      font-size: 15px;
+    }
+
+    #inner-spin {
+      width: 108px;
+      height: 108px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 12;
+      background: #BCBCBC;
+      border-radius: 50%;
+    }
+
+    #sec-settings > li {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="alert alert-success text-center alert-dismissible fade"
+     role="alert"
+     style="width: 400px; position: fixed; left: calc(50% - 200px);">
+  链接成功复制到剪贴板
+</div>
+
+<p id="share-link" style="display: none;"></p>
+
+<div class="d-flex justify-content-end mt-2">
+  <button class="btn btn-outline-info mr-2"
+          id="share-link-button">
+    复制分享链接
+  </button>
+</div>
+
+<div id="container">
+  <div id="wrapper">
+    <div id="wheel">
+      <div id="inner-wheel">
+        <div class="sec"><div class="sec-content"></div></div>
+      </div>
+      <div id="spin">
+        <div id="inner-spin"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modals">
+  <button type="button"
+          class="btn btn-primary ml-2"
+          data-toggle="modal"
+          data-target="#wheel-settings">
+    转盘设置
+  </button>
+
+  <div class="modal fade" id="wheel-settings" tabindex="-1" role="dialog" aria-labelledby="wheel-settings-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="wheel-settings-title">转盘设置</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="wheel-title">转盘标题:</label>
+            <input type="text" name="wheel-title" id="wheel-title" class="form-control">
+
+            <div class="form-check" style="display: none;">
+              <label class="form-check-label">
+                <input class="form-check-input" type="radio" name="wheel-mode" value="uniform" checked>
+                等分模式
+              </label>
+            </div>
+
+            <div class="form-check disabled" style="display: none;">
+              <label class="form-check-label ">
+                <input class="form-check-input" type="radio" name="wheel-mode" value="arbitrary" disabled>
+                任意分割模式
+              </label>
+            </div>
+
+            <label class="mt-1">转盘选项:</label>
+            <ul id="sec-settings" class="list-unstyled"></ul>
+
+            <label for="sec-content">新增选项</label>
+            <div class="input-group">
+              <input type="text" name="sec-content" id="sec-content" class="form-control">
+              <span class="input-group-btn">
+                <button class="btn btn-secondary" type="button" id="add-sec-content">添加</button>
+              </span>
+            </div>
+
+          </div>
+
+          <label for="select-wheel-template" class="mt-5">使用保存过的转盘</label>
+          <div class="input-group mb-2">
+            <select class="custom-select form-control" id="select-wheel-template"></select>
+            <span class="input-group-btn">
+              <button class="btn btn-danger" type="button" id="remove-wheel-template">删除</button>
+            </span>
+          </div>
+
+          <button type="button" class="btn btn-info" id="save-template">保存转盘</button>
+          <button type="button" class="btn btn-danger" id="factory-reset">恢复出厂设置</button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+          <button type="button" class="btn btn-primary" id="save-settings" data-dismiss="modal">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="https://cdn.bootcss.com/random-js/1.0.8/random.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/popper.js/1.12.5/umd/popper.min.js"></script>
+<script src="https://cdn.bootcss.com/bootstrap/4.0.0-beta/js/bootstrap.min.js"></script>
+
+<script type="application/javascript">
+  ;(function(globalObject) {
+    "use strict";
+
+    var STORAGE_KEY = "lunch-launcher";
+
+    var defaultWheel = {
+      title: "去哪吃",
+      mode: 'uniform',
+      secs: [{
+        content: '北区食堂',
+        ratio: 1/3
+      }, {
+        content: '汇贤饺子',
+        ratio: 1/3
+      }, {
+        content: '西区食堂',
+        ratio: 1/3
+      }]
+    }
+    var defaultState = {
+      templates: [defaultWheel],
+      wheel: defaultWheel
+    }
+
+    function saveToLocalStorage(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function getState() {
+      var stateJsonStr = localStorage.getItem(STORAGE_KEY);
+      if (stateJsonStr === null) {
+        throw new Error("empty state");
+      }
+
+      try {
+        return JSON.parse(stateJsonStr);
+      } catch (e) {
+        throw new Error("unable to parse current state");
+      }
+    }
+
+    function init() {
+      function getWheelInUrl() {
+        var currentUrl = new URL(window.location.href);
+        var wheelStrInUrl;
+        var wheelInUrl;
+        if (typeof(currentUrl.searchParams) === "object") {
+          wheelStrInUrl = currentUrl.searchParams.get("wheel");
+        } else {
+          wheelStrInUrl = currentUrl.search.split("=")[1];
+        }
+
+        try {
+          wheelInUrl = JSON.parse(decodeURIComponent(wheelStrInUrl));
+        } catch (e) {
+          wheelInUrl = null;
+        }
+        return wheelInUrl;
+      }
+
+      var wheelInUrl = getWheelInUrl();
+
+      if (wheelInUrl) {
+        defaultState = {
+          templates: [defaultWheel],
+          wheel: wheelInUrl
+        }
+      }
+
+      try {
+        getState();
+        if (wheelInUrl) {
+          setWheel(wheelInUrl);
+        }
+      } catch (e) {
+        saveToLocalStorage(defaultState);
+      }
+    }
+
+    function reset() {
+      saveToLocalStorage(defaultState);
+    }
+
+    function getWheel() {
+      return getState().wheel;
+    }
+
+    function setWheel(newWheel) {
+      var state = getState();
+      state.wheel = newWheel;
+      saveToLocalStorage(state);
+    }
+
+    function getSecs() {
+      return getWheel().secs;
+    }
+
+    function setSecs(newSecs) {
+      var state = getState();
+      state.wheel.secs = newSecs;
+      saveToLocalStorage(state);
+    }
+
+    function getTemplates() {
+      return getState().templates;
+    }
+
+    function addTemplate(template) {
+      var state = getState();
+      state.templates.push(template);
+      saveToLocalStorage(state);
+    }
+
+    function useTemplate(template) {
+      var state = getState();
+      state.wheel = template;
+      saveToLocalStorage(state);
+    }
+
+    function useTemplateWithTitle(title) {
+      var templates = getTemplates();
+      var template = templates.filter(function(tmp) {
+        return tmp.title === title;
+      })[0]
+      useTemplate(template);
+    }
+
+    function removeTemplateByTitle(title) {
+      var state = getState();
+      state.templates = state.templates.filter(function(template) {
+        return template.title !== title
+      });
+      saveToLocalStorage(state);
+    }
+
+    function clearTemplates() {
+      var state = getState();
+      state.templates = [];
+      saveToLocalStorage(state);
+    }
+
+    function getTitle() {
+      return getWheel().title;
+    }
+
+    function hasTemplateWithTitle(title) {
+      var templates = getTemplates();
+      var ret = false;
+      templates.forEach(function(template) {
+        if (template.title === title) {
+          ret = true;
+        }
+      })
+      return ret;
+    }
+
+    var wheelState = {
+      init: init,
+      reset: reset,
+      getState: getState,
+      getWheel: getWheel,
+      setWheel: setWheel,
+      getSecs: getSecs,
+      setSecs: setSecs,
+      getTemplates: getTemplates,
+      addTemplate: addTemplate,
+      useTemplate: useTemplate,
+      useTemplateWithTitle: useTemplateWithTitle,
+      removeTemplateByTitle: removeTemplateByTitle,
+      clearTemplates: clearTemplates,
+      hasTemplateWithTitle: hasTemplateWithTitle,
+      getTitle: getTitle
+    }
+
+    globalObject.ws = wheelState;
+
+  }(this))
+
+  ws.init();
+
+  window.addEventListener("load", function() {
+    // --------------------------- Globals
+    var STORAGE_KEY = "lunch-launcher";
+    var APP_NAME = STORAGE_KEY;
+    var DEFAULT_PALETTE = [
+      '#16a085', '#2980b9', '#34495e', '#f39c12',
+      '#d35400', '#c0392b', "#B1AF70", '#B17070',
+      '#765E77', '#598D59', '#456D6A', '#955D5A']
+    var MIN_SECS = 3;
+    var MAX_SECS = 12;
+
+    // --------------------- Utilities
+    function copyToClipboard(elementId) {
+      var aux = document.createElement("input");
+      aux.setAttribute("value", document.getElementById(elementId).innerHTML);
+      document.body.appendChild(aux);
+      aux.select();
+      document.execCommand("copy");
+      document.body.removeChild(aux);
+    }
+
+    function getStyleSheet(title) {
+      for(var i = 0; i < document.styleSheets.length; i++) {
+        var sheet = document.styleSheets[i];
+        if (sheet.title === title) {
+          return sheet;
+        }
+      }
+    }
+
+    function getColorFromPalette(palette, index) {
+      if (index >= palette.length) {
+        index = index % palette.length
+      }
+      return palette[index];
+    }
+
+    function createSecEle(sec, pos, isRemovable) {
+      var secContainer = document.createElement("li");
+      secContainer.classList.add("d-flex");
+      secContainer.classList.add("justify-content-between");
+      secContainer.id = "sec" + pos;
+
+      var secContentEle = document.createElement("div");
+      secContentEle.classList.add("btn");
+      secContentEle.classList.add("btn-light");
+      secContentEle.classList.add("btn--sm");
+      secContentEle.id = "sec" + pos;
+      secContentEle.innerText = sec.content;
+
+      var secConfirmButtonEle = document.createElement("button");
+      secConfirmButtonEle.type = "button";
+      secConfirmButtonEle.classList.add("btn");
+      secConfirmButtonEle.classList.add("btn-primary");
+      secConfirmButtonEle.id = "sec" + pos + "-confirm";
+      secConfirmButtonEle.style = "display: none;";
+      secConfirmButtonEle.innerText = "确认";
+      secConfirmButtonEle.addEventListener("click", function() {
+        this.style = "display: none;";
+        secEditButtonEle.style = "display: inherit;";
+
+        var editInputEle = document.getElementById("sec" + pos + "-edit-input");
+        var editInputValue = editInputEle.value;
+
+        if (editInputValue.length > 0) {
+          secContentEle.innerText = editInputValue;
+        }
+
+        editInputEle.remove();
+      })
+
+      var secEditButtonEle = document.createElement("button");
+      secEditButtonEle.type = "button";
+      secEditButtonEle.classList.add("btn");
+      secEditButtonEle.classList.add("btn-light");
+      secEditButtonEle.id = "sec" + pos + "-edit";
+      secEditButtonEle.innerText = "编辑";
+      secEditButtonEle.addEventListener('click', function() {
+        this.style = "display: none;";
+        secConfirmButtonEle.style = "display: inherit;";
+
+        var editInputEle = document.createElement("input");
+        editInputEle.type = "text";
+        editInputEle.value = "";
+        editInputEle.classList.add("form-control");
+        editInputEle.classList.add("ml-2");
+        editInputEle.classList.add("mr-2");
+        editInputEle.id = "sec" + pos + "-edit-input";
+        secContainer.insertBefore(editInputEle, secButtonContainer);
+      })
+
+      var secRemoveButtonEle = document.createElement("button");
+      secRemoveButtonEle.type = "button";
+      secRemoveButtonEle.classList.add("btn");
+      secRemoveButtonEle.classList.add("btn-danger");
+      secRemoveButtonEle.classList.add("ml-1");
+      secRemoveButtonEle.id = "sec" + pos + "-remove";
+      secRemoveButtonEle.innerText = "删除";
+      secRemoveButtonEle.addEventListener("click", function() {
+        if (window.confirm("确定要删除吗?")) {
+          secContainer.remove();
+          checkSecNum();
+        }
+      })
+
+      var secButtonContainer = document.createElement("div");
+      secButtonContainer.style = "display: flex";
+      secButtonContainer.appendChild(secConfirmButtonEle);
+      secButtonContainer.appendChild(secEditButtonEle);
+      if (isRemovable) secButtonContainer.appendChild(secRemoveButtonEle);
+
+      secContainer.appendChild(secContentEle);
+      secContainer.appendChild(secButtonContainer);
+      return secContainer;
+    }
+
+    function checkSecNum() {
+      var addSecContentButton = document.getElementById("add-sec-content");
+      var secNum = document.querySelectorAll("#sec-settings > li").length;
+      addSecContentButton.disabled = secNum >= MAX_SECS;
+    }
+
+    // --------------------------- Button Event Listeners
+    var degree = 1800;
+    var clicks = 0;
+
+    function setUpSpinButton() {
+      var $spin = document.getElementById("spin");
+      var $innerWheel = document.getElementById("inner-wheel");
+      $spin.addEventListener("click", function() {
+        clicks++;
+
+        var newDegree = degree*clicks;
+        var extraDegree = Random.integer(1, 360)(Random.engines.browserCrypto);
+        var totalDegree = newDegree + extraDegree;
+
+        $innerWheel.style.transform = "rotate(" + totalDegree + 'deg)';
+      })
+    }
+
+    setUpSpinButton();
+
+    function setUpAddSecContentButton() {
+      document.getElementById("add-sec-content").addEventListener('click', function(_) {
+        var secContentInputEle = document.querySelector("input[name=sec-content]");
+
+        var secSettingsEle = document.getElementById("sec-settings");
+        var secNum = document.querySelectorAll("#sec-settings > li").length;
+        var sec = { content: secContentInputEle.value, ratio: 0 };
+        var secEle = createSecEle(sec, secNum, true);
+        secSettingsEle.appendChild(secEle);
+        secContentInputEle.value = "";
+        checkSecNum();
+      })
+    }
+
+    setUpAddSecContentButton();
+
+    function setUpSaveWheelSettingsButton() {
+      var wheelSettingsSubmitButton = document.getElementById("save-settings");
+      wheelSettingsSubmitButton.addEventListener("click", function() {
+        updateWheelSettings();
+        render();
+      })
+    }
+
+    setUpSaveWheelSettingsButton();
+
+    function setUpSaveWheelTemplateButton() {
+      var saveWheelTemplateButton = document.getElementById("save-template");
+      saveWheelTemplateButton.addEventListener("click", function() {
+        var currentTemplateTitle = document.getElementById("wheel-title").value;
+        if (ws.hasTemplateWithTitle(currentTemplateTitle)) {
+          window.alert("转盘 " + currentTemplateTitle + " 已经存在，无法保存");
+        } else {
+          updateWheelSettings();
+          ws.addTemplate(ws.getWheel());
+          render();
+          window.alert("转盘保存成功");
+        }
+      })
+    }
+
+    setUpSaveWheelTemplateButton();
+
+    function setUpSelectWheelTemplate() {
+      document.getElementById("select-wheel-template").addEventListener("change", function() {
+        ws.useTemplateWithTitle(this.value);
+        render();
+      })
+    }
+
+    setUpSelectWheelTemplate();
+
+    function setUpFactoryReset() {
+      document.getElementById('factory-reset').addEventListener("click", function() {
+        if (window.confirm("您是否确定恢复出厂设置，所有保存的转盘也会被删除")) {
+          ws.reset();
+          render();
+          window.alert("恢复出厂设置成功");
+        }
+      })
+    }
+
+    setUpFactoryReset();
+
+    function setUpRemoveTemplateButton() {
+      document.getElementById('remove-wheel-template').addEventListener("click", function() {
+        var currentTemplateTitle = document.getElementById("select-wheel-template").value;
+        if (window.confirm("您是否确定删除转盘 " + currentTemplateTitle)) {
+          ws.removeTemplateByTitle(currentTemplateTitle);
+          render();
+        }
+      })
+    }
+
+    setUpRemoveTemplateButton();
+
+    function setUpShareLinkButton() {
+      var shareLinkEle = document.getElementById("share-link");
+      document.getElementById('share-link-button').addEventListener("click", function() {
+        shareLinkEle.innerText = window.location.origin
+          + window.location.pathname
+          + '?wheel='
+          + encodeURIComponent(JSON.stringify(ws.getWheel()));
+        copyToClipboard("share-link");
+
+        $('.alert').addClass('show')
+        setTimeout(function() {
+          $('.alert').removeClass('show')
+        }, 1000);
+      })
+    }
+
+    setUpShareLinkButton();
+
+    // --------------------------- Wheel
+
+    function setSecElements() {
+      // remove all child secs
+      var innerWheelEle = document.getElementById("inner-wheel");
+      while(innerWheelEle.hasChildNodes()) {
+        innerWheelEle.removeChild(innerWheelEle.lastChild);
+      }
+
+      // add all child secs
+      var secs = ws.getSecs();
+      for (var i = 0; i < ws.getSecs().length; i++) {
+        var sec = secs[i];
+
+        var secEle = document.createElement("div");
+        var secContentEle = document.createElement("div");
+
+        secEle.classList.add("sec");
+        secContentEle.classList.add("sec-content");
+        secContentEle.innerText = sec.content;
+
+        secEle.appendChild(secContentEle);
+        innerWheelEle.appendChild(secEle);
+      }
+    }
+
+    function setSecStyle(secRatio, secIndex, secOffset) {
+      var styleSheet = getStyleSheet(APP_NAME);
+
+      var secHalfWidth = 250 * Math.tan(secRatio * Math.PI);
+      var secColor = getColorFromPalette(DEFAULT_PALETTE, secIndex);
+
+      styleSheet.insertRule("#wheel div.sec {"
+        + "  border-width: 250px " + secHalfWidth + "px 0;"
+        + "  transform-origin: " + secHalfWidth + "px 250px;"
+        + "  left: calc(50% - " + secHalfWidth + "px);"
+        + "}", styleSheet.cssRules.length - 1);
+
+      styleSheet.insertRule('#wheel div.sec:nth-child(' + secIndex + ') {'
+        +'  transform: rotate(' + secOffset + 'deg);'
+        +'  border-color: ' + secColor +  ' transparent;'
+        +'}', styleSheet.cssRules.length - 1)
+    }
+
+    function setSecStyles() {
+      var secs = ws.getSecs();
+      var secOffset = 0;
+      for (var i = 0; i < secs.length; i++) {
+        var sec = secs[i];
+        var secIndex = i + 1;
+        setSecStyle(sec.ratio, secIndex, secOffset);
+        secOffset += sec.ratio * 360;
+      }
+    }
+
+    function renderSecs() {
+      setSecElements();
+      setSecStyles();
+    }
+
+    function renderWheelSettingsModal() {
+      var wheelSettings = ws.getWheel();
+
+
+      // set wheel templates
+      var templates = ws.getTemplates();
+      var templateTitles = templates.map(function(template) { return template.title });
+      var selectWheelTemplateEle = document.getElementById("select-wheel-template");
+      // remove current template elements
+      while (selectWheelTemplateEle.hasChildNodes()) {
+        selectWheelTemplateEle.removeChild(selectWheelTemplateEle.lastChild);
+      }
+      // add non-select element
+      var emptyValueOption = document.createElement("option");
+      emptyValueOption.value = "-1";
+      emptyValueOption.innerText = "未选择";
+      selectWheelTemplateEle.appendChild(emptyValueOption);
+      // add current template elements
+      for (var i = 0; i < templateTitles.length; i++) {
+        var templateTitle = templateTitles[i];
+        var templateEle = document.createElement("option");
+        if (templateTitle === wheelSettings.title) { templateEle.selected = true; }
+        templateEle.value = templateTitle;
+        templateEle.innerText = templateTitle;
+        selectWheelTemplateEle.appendChild(templateEle);
+      }
+
+
+      // set wheel title
+      document.querySelector("input[name=wheel-title]").value = wheelSettings.title;
+
+
+      // set wheel mode
+      document.querySelector("input[name=wheel-mode]").value = wheelSettings.mode;
+
+
+      // set wheel secs
+      // 1. remove current secs
+      var secSettingsEle = document.getElementById("sec-settings");
+      while(secSettingsEle.hasChildNodes()) { secSettingsEle.removeChild(secSettingsEle.lastChild); }
+
+      // 2. add new secs
+      for (var i = 0; i < wheelSettings.secs.length; i++) {
+        var sec = wheelSettings.secs[i];
+        var isRemovable = i >= MIN_SECS;
+        var secContainer = createSecEle(sec, i, isRemovable);
+        secSettingsEle.appendChild(secContainer);
+      }
+    }
+
+    function updateWheelSettings() {
+      var wheelMode = document.querySelector("input[name=wheel-mode]").value;
+      var wheelTitle = document.querySelector("input[name=wheel-title]").value;
+
+      // assemble wheel secs
+      var wheelSecs = [];
+
+      var wheelSecContents = Array.from(document.querySelectorAll("#sec-settings > li > div:first-child")).map(
+        function(secLi) { return secLi.innerText; }
+      );
+
+      for (var i = 0; i < wheelSecContents.length; i++) {
+        var content = wheelSecContents[i];
+        var ratio = 1 / wheelSecContents.length;
+        wheelSecs.push({ content: content, ratio: ratio });
+      }
+
+      ws.setWheel({
+        title: wheelTitle,
+        mode: wheelMode,
+        secs: wheelSecs
+      })
+    }
+
+    function renderSpinButton() {
+      var title = ws.getTitle();
+      var styleSheet = getStyleSheet(APP_NAME);
+      styleSheet.insertRule("#spin:after {"
+        + "  content: \"" + title + "\";"
+        + "}", styleSheet.cssRules.length - 1);
+    }
+
+    function render() {
+      renderSpinButton();
+      renderSecs();
+      renderWheelSettingsModal();
+    }
+
+    render();
+  })
+</script>
+</body>
+</html>
